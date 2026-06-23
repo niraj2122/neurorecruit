@@ -1,0 +1,3 @@
+# NeuroRecruit uses Python stdlib only.
+# No external packages required.
+# Python 3.9+ recommended.

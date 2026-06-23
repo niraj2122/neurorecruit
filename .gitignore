@@ -1,0 +1,6 @@
+candidates.jsonl
+test_candidates.jsonl
+test_output.csv
+__pycache__/
+*.pyc
+.vscode/
