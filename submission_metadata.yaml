@@ -4,17 +4,12 @@
 team_name: "NeuroRecruit"
 
 primary_contact:
-  name: "Your Name Here"
-  email: "your@email.com"
-  phone: "+91-XXXXXXXXXX"
+  name: "Niraj Baviskar"
+  email: "nirajbaviskar2122@email.com"
+  
 
-team_members:
-  - name: "Your Name Here"
-    email: "your@email.com"
-    role: "ML Engineer / Team Lead"
-
-github_repo: "https://github.com/YOUR_USERNAME/neurorecruit"
-sandbox_link: "https://huggingface.co/spaces/YOUR_USERNAME/neurorecruit"
+github_repo: "https://github.com/niraj2122/neurorecruit"
+sandbox_link: "https://neurorecruit.streamlit.app/"
 
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
