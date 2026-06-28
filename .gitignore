@@ -1,6 +1,24 @@
+# Large data files — do not commit to git (GitHub rejects files over 100MB)
 candidates.jsonl
+candidates.jsonl.gz
+
+# Temporary test files
 test_candidates.jsonl
+test.jsonl
 test_output.csv
+
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
+
+# VS Code settings
 .vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Fix scripts (temp)
+fix_encoding.py

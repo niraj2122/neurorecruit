@@ -1,50 +1,92 @@
 # Redrob Hackathon — Submission Metadata
 # NeuroRecruit — Intelligent Candidate Discovery
 
+# ============================================================================
+# Team identity
+# ============================================================================
 team_name: "NeuroRecruit"
 
 primary_contact:
   name: "Niraj Baviskar"
-  email: "nirajbaviskar2122@email.com"
-  
+  email: "nirajbaviskar2122@gmail.com"
+  phone: "+91-9097722122"        # ← replace with your real phone number
 
+team_members:
+  - name: "Gajanan Baviskar "
+    email: "gajanan22.2004@gmail.com"
+    role: "Team Lead"
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
 github_repo: "https://github.com/niraj2122/neurorecruit"
+
 sandbox_link: "https://neurorecruit.streamlit.app/"
 
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
+# ============================================================================
+# Compute environment
+# ============================================================================
 compute:
-  platform: "CPU-only machine"
-  cpu_cores: 4
-  ram_gb: 8
-  python_version: "3.11"
-  os: "Ubuntu 22.04 / macOS"
+  platform: "Windows 11 / Local CPU"
+  cpu_cores: 8
+  ram_gb: 16
+  python_version: "3.12"
+  os: "Windows 11"
   uses_gpu_for_inference: false
   has_network_during_ranking: false
   pre_computation_required: false
   pre_computation_time_minutes: 0
 
+# ============================================================================
+# AI tools declaration
+# ============================================================================
 ai_tools_used:
   - "Claude"
 
 ai_usage_summary: |
   Used Claude for architecture discussion and code review.
-  All scoring logic, feature engineering, and JD analysis was done by the team.
+  All scoring logic, feature engineering, JD analysis, weight tuning,
+  and honeypot detection design were done by the team based on careful
+  reading of the JD including the hackathon hint section.
   No candidate data was fed to any external LLM during the ranking step.
-  The ranking script itself makes zero network calls.
+  The rank.py script makes zero external network calls.
 
+# ============================================================================
+# Approach summary
+# ============================================================================
 methodology_summary: |
   Rule-based multi-signal ranker with JD-specific feature engineering.
-  Five components: career narrative fit (35%), skills match (30%), behavioral
-  signals (15%), education (12%), location/notice (8%). Career narrative is
-  scored by searching production ML signals in role descriptions — not just
-  skill keywords. Behavioral signals act as a multiplicative modifier: a
-  candidate with 5% recruiter response rate gets a 0.4x availability penalty
-  regardless of how strong their profile looks. Honeypot detection uses three
-  checks: inverted salary, skill duration exceeding career length, and
-  assessment score contradicting claimed proficiency level. Runtime: ~60s on
-  CPU for the full 100K pool. Zero external model calls.
+  Five scoring components: career narrative fit (35%), skills match (30%),
+  behavioral signals (15%), education (12%), location/notice period (8%).
 
+  Career narrative is scored by searching production ML signals in role
+  descriptions using 30+ regex patterns — not skill keywords. A candidate
+  who built a LambdaMART ranking system and measured NDCG in production
+  scores highly even if their skill list omits the exact JD keywords.
+
+  Behavioral signals act as a multiplicative modifier (0.4x to 1.0x):
+  a candidate with 5% recruiter response rate gets a 0.4x multiplier
+  applied to their entire composite score, structurally preventing
+  unreachable candidates from dominating the ranking.
+
+  Honeypot detection uses 6 consistency checks (needs 2+ flags):
+  inverted salary range, skill duration exceeding career length,
+  total career months exceeding stated YOE, expert proficiency with zero
+  duration months, assessment score contradicting expert claim, and
+  YOE impossible given graduation year. Flagged 2,213 honeypots.
+
+  Sandbox (neurorecruit.streamlit.app) uses heap-based streaming to
+  process the full 487MB candidates.jsonl without loading all candidates
+  into memory simultaneously. Also features real-time JD bias detection
+  and per-candidate gap analysis with interview questions.
+
+  Runtime: ~46 seconds for full 100K pool on CPU. Zero external calls.
+
+# ============================================================================
+# Declarations
+# ============================================================================
 declarations:
   read_submission_spec: true
   code_is_original_work: true

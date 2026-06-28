@@ -1,100 +1,212 @@
-# NeuroRecruit — Intelligent Candidate Discovery
-### Redrob Hackathon · Senior AI Engineer JD · 100,000 candidates → top 100 in 60 seconds
+# 🧠 NeuroRecruit — Intelligent Candidate Discovery
+### Redrob Hackathon · Senior AI Engineer JD · 100,000 candidates → top 100 in 46 seconds
+
+[![Sandbox](https://img.shields.io/badge/sandbox-neurorecruit.streamlit.app-red?logo=streamlit)](https://neurorecruit.streamlit.app/)
+[![GitHub](https://img.shields.io/badge/repo-niraj2122%2Fneurorecruit-black?logo=github)](https://github.com/niraj2122/neurorecruit)
+[![Validator](https://img.shields.io/badge/submission-valid-brightgreen)]()
 
 ---
 
-## Quickstart (reproduce submission in one command)
+## Quickstart — reproduce submission in one command
 
 ```bash
-python3 rank.py --candidates ./candidates.jsonl --out ./submission.csv
-python3 validate_submission.py submission.csv   # → "Submission is valid."
+python rank.py --candidates ./candidates.jsonl --out ./submission.csv
+python validate_submission.py submission.csv
+# → Submission is valid.
 ```
 
-**Requirements:** Python 3.9+, zero pip installs. Pure stdlib.  
-**Runtime:** ~60 seconds on CPU, <1 GB RAM, no network calls.
+**Requirements:** Python 3.9+, zero pip installs, pure stdlib.
+**Runtime:** ~46 seconds on CPU · <1 GB RAM · zero network calls · no GPU.
+
+---
+
+## Live sandbox
+
+**[neurorecruit.streamlit.app](https://neurorecruit.streamlit.app/)**
+
+Upload `sample_candidates.json` (50 candidates, instant) or the full `candidates.jsonl`
+(100K candidates, ~90s). The sandbox uses heap-based streaming — it never loads all
+candidates into memory simultaneously, so it handles the full 487MB file without crashing.
+
+Features visible in the sandbox:
+- Real-time JD bias detection (flags masculine-coded and age-coded language)
+- Per-candidate skill alignment tags (present vs missing vs JD requirements)
+- Gap analysis with specific interview questions for each skill gap
+- Download ranked CSV directly from the browser
 
 ---
 
 ## Architecture
 
-Five-layer intelligent ranking engine:
-
 ```
 100,000 candidates
-       ↓
-[1] Honeypot detection      — 6 consistency checks, 2,213 flagged & removed
-       ↓
-[2] Hard filter             — <3yr YOE, consulting-only with no ML signal removed
-       ↓
-[3] 5-signal scoring        — per candidate across all dimensions
-       ↓
-[4] Behavioral multiplier   — suppresses unreachable candidates structurally
-       ↓
-[5] Ranked CSV + reasoning  — top 100 with per-candidate briefing notes
+       │
+       ▼
+┌─────────────────────────────────────────────────────┐
+│  Stage 1: Honeypot detection                        │
+│  6 consistency checks → 2,213 flagged & removed     │
+│  (inverted salary, impossible skill durations,       │
+│   expert claims contradicted by assessments)         │
+└─────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────┐
+│  Stage 2: Hard filter                               │
+│  19,231 removed (<3yr YOE, consulting-only           │
+│  careers with zero ML signal in descriptions)        │
+└─────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────┐
+│  Stage 3: Five-dimension scoring (78,556 candidates) │
+│                                                     │
+│  Career narrative    35%  production ML evidence    │
+│                           in role descriptions      │
+│  Skills match        30%  proficiency × duration    │
+│                           × assessment score        │
+│  Behavioral signals  15%  8 platform signals        │
+│  Education           12%  field × institution tier  │
+│  Location / notice    8%  Pune/Noida pref, 30d notice│
+└─────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────┐
+│  Stage 4: Behavioral multiplier                     │
+│  composite = base × (0.4 + 0.6 × behavioral)        │
+│  Range: 0.4× (5% response rate) to 1.0× (engaged)  │
+│  Models hiring outcomes, not just profile quality   │
+└─────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────┐
+│  Stage 5: Ranked CSV + reasoning                    │
+│  Top 100 candidates · 8 structural reasoning        │
+│  variations · references real profile facts         │
+└─────────────────────────────────────────────────────┘
 ```
-
-### Scoring weights
-
-| Dimension | Weight | What it measures |
-|-----------|--------|-----------------|
-| Career narrative | 35% | Production ML signals in role descriptions |
-| Skills match | 30% | JD skill overlap × proficiency × duration × assessment |
-| Behavioral signals | 15% + multiplier | Availability, engagement, reachability |
-| Education | 12% | CS/ML field relevance × institution tier |
-| Location/notice | 8% | Pune/Noida preferred, sub-30d notice ideal |
-
-**Behavioral is also a multiplier** (0.4–1.0×) on the composite score. A 5% response-rate candidate cannot rank highly regardless of skills — by design.
-
-### Key design decisions
-
-1. **Career narrative over skill keywords.** We search role descriptions for production evidence: "shipped ranking model", "embedding drift", "hybrid retrieval", "evaluation framework". These signals are harder to fake than a skill list.
-
-2. **Negative skill signals.** LangChain-heavy profiles, CV/robotics focus — the JD explicitly calls these out. We apply score penalties.
-
-3. **Honeypot detection before scoring.** Six checks including salary inversion, skill duration vs career length, assessment contradictions.
-
-4. **Gap analysis.** For top candidates, we compute JD skill deltas and generate specific interview questions for each gap.
 
 ---
 
-## Files
+## Scoring in detail
+
+### Career narrative (35%) — the core insight
+
+We search every word of every role description for production ML signals using
+regex patterns. A candidate who wrote "deployed LambdaMART-based ranking to 10M
+users and measured NDCG improvements via A/B testing" scores near-perfect even
+if their skill list is sparse.
+
+High-value patterns (weight 12–15 each):
+`shipped.*ranking` · `embedding.*production` · `hybrid.*retrieval` ·
+`ndcg` in career text · `evaluation.*framework` · `learning.to.rank` ·
+`lambdamart` · `semantic.*search`
+
+Penalty signals: research-only careers (0.3×), LangChain-heavy without
+production deployment (0.5×), all-consulting with no ML narrative (0.4×).
+
+### Skills match (30%)
+
+Each skill match is multiplied by three sub-factors:
+
+```
+skill_value = base_weight × proficiency_mult × duration_mult × assessment_mult
+
+proficiency_mult:  beginner=0.4  intermediate=0.7  advanced=0.9  expert=1.0
+duration_mult:     min(1.0, 0.5 + duration_months / 48)
+assessment_mult:   0.8 + 0.2 × (score / 100)  if assessed, else 0.9
+```
+
+### Behavioral signals (15% + multiplier)
+
+Eight signals from the `redrob_signals` object:
+
+| Signal | Weight |
+|--------|--------|
+| Last active date (recency) | 25% |
+| Recruiter response rate | 20% |
+| Open-to-work flag | 15% |
+| GitHub activity score | 15% |
+| Profile completeness | 10% |
+| Interview completion rate | 5% |
+| Saved by recruiters (30d) | 5% |
+| Verified contact details | 5% |
+
+The behavioral score also acts as a **multiplier** on the entire composite:
+`composite = base × (0.4 + 0.6 × behavioral)`
+
+A candidate with 5% response rate gets a 0.43× multiplier — their score is
+nearly halved regardless of how strong their profile looks. This directly
+models the JD's stated requirement: "a perfect-on-paper candidate who hasn't
+logged in for 6 months is not actually available."
+
+### Honeypot detection
+
+Six consistency checks, requiring 2+ flags to call a honeypot (prevents
+false positives from data entry errors):
+
+1. Salary `min > max` — impossible range
+2. Skill `duration_months > career_length_months + 12` — used skill longer than career
+3. Total career months far exceeds stated YOE
+4. 3+ skills claimed as "expert" with `duration_months = 0`
+5. Assessment score < 35 on a skill claimed as "expert"
+6. YOE exceeds what's possible given graduation year + 5yr grace
+
+Result: **2,213 honeypots removed** before scoring begins.
+
+---
+
+## File structure
 
 ```
 neurorecruit/
-├── rank.py                    # Main ranker — all logic, 992 lines, no dependencies
-├── sandbox_app.py             # Streamlit demo app
-├── colab_demo.py              # Google Colab demo cells
+├── rank.py                    # Main ranker — zero dependencies, pure stdlib
+├── sandbox_app.py             # Streamlit app — heap-based streaming, bias detection
+├── colab_demo.py              # Google Colab demo
 ├── README.md                  # This file
-├── requirements.txt           # Empty (stdlib only)
-├── requirements_sandbox.txt   # streamlit + pandas (sandbox only)
-└── submission_metadata.yaml   # Hackathon submission metadata
+├── requirements.txt           # Empty — stdlib only
+├── requirements_sandbox.txt   # streamlit>=1.28.0, pandas>=1.5.0
+├── submission_metadata.yaml   # Hackathon metadata
+├── submission.csv             # Final submission — 100 ranked candidates
+├── inspect.py                 # Inspect test_output.csv (sample run)
+├── full_check.py              # Inspect submission.csv (full run)
+├── .streamlit/
+│   └── config.toml            # maxUploadSize = 1024 (1GB)
+└── .gitignore                 # Excludes candidates.jsonl (487MB)
 ```
-
----
-
-## Sandbox
-
-**HuggingFace Spaces (Streamlit):**
-1. Create new Space at huggingface.co/new-space → Streamlit
-2. Upload `sandbox_app.py` as `app.py`
-3. Upload `rank.py` 
-4. Upload `requirements_sandbox.txt` as `requirements.txt`
-5. The Space builds automatically — share the URL
-
-**Google Colab (alternative):**
-1. Open colab.research.google.com → new notebook
-2. Follow cells in `colab_demo.py`
-3. Upload `sample_candidates.json` when prompted
-4. Share as "Anyone with link can view"
 
 ---
 
 ## What makes this different from a keyword filter
 
-Most systems rank by counting skill matches. NeuroRecruit:
+| What most systems do | What NeuroRecruit does |
+|---------------------|----------------------|
+| Count skill keyword matches | Read career descriptions for production evidence |
+| Add behavioral scores additively | Apply behavioral as a structural multiplier |
+| Rank all 100K equally | Remove 2,213 honeypots before scoring begins |
+| Generic reasoning strings | 8 structural templates × real profile facts |
+| No bias awareness | Real-time JD bias detection in sandbox |
+| No gap visibility | Per-candidate skill delta + interview questions |
 
-- **Reads career descriptions** for production ML evidence (not just skill lists)
-- **Detects fraudulent profiles** before they can contaminate rankings  
-- **Models hiring outcomes** — an unreachable candidate scores low regardless of profile quality
-- **Generates per-candidate reasoning** that references actual profile facts
-- **Gap analysis + interview questions** for the top candidates
+---
+
+## Top 5 results
+
+| Rank | Candidate | Role | Company | Score |
+|------|-----------|------|---------|-------|
+| #1 | CAND_0018499 | Senior ML Engineer | Zomato | 0.7816 |
+| #2 | CAND_0081846 | Lead AI Engineer | Razorpay | 0.7602 |
+| #3 | CAND_0077337 | Staff ML Engineer | Paytm | 0.7592 |
+| #4 | CAND_0079387 | AI Engineer | Microsoft | 0.7329 |
+| #5 | CAND_0071974 | Senior AI Engineer | Netflix | 0.7202 |
+
+Score range across top 100: **0.6176 – 0.7816**
+
+---
+
+## Reproduce command
+
+```bash
+python rank.py --candidates ./candidates.jsonl --out ./submission.csv
+```
+
+Single command. No setup. No installs. Runs in ~46 seconds on any CPU.
