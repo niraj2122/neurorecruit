@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-NeuroRecruit — Intelligent Candidate Discovery Ranker
-Redrob Hackathon — Senior AI Engineer JD
+NeuroRecruit - Intelligent Candidate Discovery Ranker
+Redrob Hackathon - Senior AI Engineer JD
 
 Architecture:
   1. Hard filter: eliminate clear non-fits (wrong title track, disqualifying signals)
@@ -24,7 +24,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 # ─────────────────────────────────────────────────────────────────────────────
-# JD INTELLIGENCE — extracted from the Senior AI Engineer JD
+# JD INTELLIGENCE - extracted from the Senior AI Engineer JD
 # ─────────────────────────────────────────────────────────────────────────────
 
 REFERENCE_DATE = date(2026, 6, 18)  # Hackathon date
@@ -33,7 +33,7 @@ REFERENCE_DATE = date(2026, 6, 18)  # Hackathon date
 # Keys: lowercase skill tokens to match against profile text
 # Values: importance weight (higher = more important to this JD)
 JD_REQUIRED_SKILLS = {
-    # Embedding / retrieval systems (HIGHEST weight — absolute requirement)
+    # Embedding / retrieval systems (HIGHEST weight - absolute requirement)
     "embeddings": 10,
     "embedding": 10,
     "sentence-transformers": 10,
@@ -120,7 +120,7 @@ JD_PREFERRED_SKILLS = {
 
 # Negative skill signals (JD explicitly says "NOT" these primary focuses)
 JD_NEGATIVE_SKILLS = {
-    "langchain": -4,       # JD: "framework enthusiasts" — negative signal
+    "langchain": -4,       # JD: "framework enthusiasts" - negative signal
     "computer vision": -3,
     "opencv": -3,
     "yolo": -2,
@@ -139,7 +139,7 @@ JD_NEGATIVE_SKILLS = {
     "figma": -1,       # small penalty, not disqualifying
 }
 
-# Career title signals — what the JD "ideal" looks like vs. what's clearly wrong
+# Career title signals - what the JD "ideal" looks like vs. what's clearly wrong
 STRONGLY_POSITIVE_TITLE_TOKENS = {
     "ml engineer", "machine learning engineer", "ai engineer", "nlp engineer",
     "research engineer", "applied scientist", "applied ml", "data scientist",
@@ -268,7 +268,7 @@ def is_honeypot(candidate: dict) -> tuple[bool, list[str]]:
 def score_skills(candidate: dict) -> float:
     """
     Score 0-1: skills match against JD requirements.
-    Goes beyond keyword match — considers proficiency, duration, and assessment scores.
+    Goes beyond keyword match - considers proficiency, duration, and assessment scores.
     """
     skills = candidate.get("skills", [])
     assessments = candidate["redrob_signals"].get("skill_assessment_scores", {})
@@ -317,7 +317,7 @@ def score_skills(candidate: dict) -> float:
             skill_val = weight * prof_mult * dur_mult * assess_mult
             required_score += skill_val
         elif text_match:
-            # Mentioned in career text but not as a formal skill — partial credit
+            # Mentioned in career text but not as a formal skill - partial credit
             required_score += weight * 0.4
 
     # Score preferred skills
@@ -387,7 +387,7 @@ def score_career_fit(candidate: dict) -> float:
     elif any(t in title for t in WEAKLY_POSITIVE_TITLE_TOKENS):
         title_score = 0.5
     elif any(t in title for t in DISQUALIFYING_TITLE_TOKENS):
-        title_score = -0.3   # negative — title is a mismatch
+        title_score = -0.3   # negative - title is a mismatch
 
     # But override if their career text strongly suggests AI/ML work
     ml_signals_in_career = sum(
@@ -432,7 +432,7 @@ def score_career_fit(candidate: dict) -> float:
 
     score += 0.15 * company_score
 
-    # ── YOE component (20%) — JD says 5-9 but is flexible ──────────────────
+    # ── YOE component (20%) - JD says 5-9 but is flexible ──────────────────
     # JD "ideal": 6-8yr total, 4-5yr in applied ML
     if 5 <= yoe <= 9:
         yoe_score = 1.0
@@ -443,16 +443,16 @@ def score_career_fit(candidate: dict) -> float:
     elif 3 <= yoe < 4:
         yoe_score = 0.5
     elif yoe > 12:
-        yoe_score = 0.6  # too senior — JD doesn't want "architecture" people
+        yoe_score = 0.6  # too senior - JD doesn't want "architecture" people
     else:
         yoe_score = 0.1  # under 3 years
 
     score += 0.20 * yoe_score
 
-    # ── Career narrative component (50%) — what they actually built ─────────
+    # ── Career narrative component (50%) - what they actually built ─────────
     # This is the most important: "a Tier-5 candidate may not use RAG/Pinecone
     # but if their career shows they built recommendation systems at product
-    # companies, they're a fit" — per the JD's hackathon hint
+    # companies, they're a fit" - per the JD's hackathon hint
     narrative_signals = {
         # High value: directly relevant work
         "shipped.*ranking": 15,
@@ -632,7 +632,7 @@ def score_location_fit(candidate: dict) -> float:
 def score_behavioral_signals(candidate: dict) -> float:
     """
     Score 0-1: availability and engagement signals.
-    These are MULTIPLICATIVE modifiers — a perfect-on-paper candidate
+    These are MULTIPLICATIVE modifiers - a perfect-on-paper candidate
     who is unreachable is effectively unavailable.
 
     JD hint: "a perfect-on-paper candidate who hasn't logged in for 6 months
@@ -707,7 +707,7 @@ def score_behavioral_signals(candidate: dict) -> float:
 
     # ── Weighted behavioral composite ───────────────────────────────────────
     behavioral = (
-        0.25 * recency_score +       # most important — are they even here?
+        0.25 * recency_score +       # most important - are they even here?
         0.20 * response_score +      # will they respond to recruiters?
         0.15 * otw_score +           # have they flagged availability?
         0.15 * github_score +        # technical activity signal
@@ -732,12 +732,12 @@ def compute_composite(
     Weights reflect JD emphasis:
     - Career fit (what they actually built) is most important
     - Skills match is second
-    - Behavioral signals: multiplier approach — bad signals don't just subtract, they multiply down
+    - Behavioral signals: multiplier approach - bad signals don't just subtract, they multiply down
     - Education and location: tiebreakers
     """
     # Base score from core dimensions
     base = (
-        0.35 * career +      # most important — actual work experience
+        0.35 * career +      # most important - actual work experience
         0.30 * skills +      # skill match against JD
         0.15 * behavioral +  # availability/engagement signals
         0.12 * education +   # education relevance
@@ -752,6 +752,7 @@ def compute_composite(
 
 
 def build_reasoning(candidate: dict, scores: dict, rank: int) -> str:
+    def pct(v): return round(v * 100)
     import hashlib
     profile = candidate["profile"]
     signals = candidate["redrob_signals"]
@@ -847,7 +848,7 @@ def build_reasoning(candidate: dict, scores: dict, rank: int) -> str:
         if assess_str:
             sentence1 = f"{yoe:.0f}-year {title} at {company}; platform assessments: {assess_str}."
         else:
-            sentence1 = f"{title} at {company} — {yoe:.0f} years in ML/AI with retrieval and ranking background."
+            sentence1 = f"{title} at {company} - {yoe:.0f} years in ML/AI with retrieval and ranking background."
     elif template_idx == 3:
         avail = f"notice {notice}d, response {rr:.0%}, {'open to work' if otw else 'not open'}"
         sentence1 = f"{yoe:.0f}-year {title} at {company}; availability: {avail}."
@@ -855,12 +856,12 @@ def build_reasoning(candidate: dict, scores: dict, rank: int) -> str:
         fit = "strong" if scores.get("composite", 0) > 0.72 else "solid" if scores.get("composite", 0) > 0.67 else "moderate"
         sentence1 = f"{fit.capitalize()} fit: {title} at {company}, {yoe:.0f}yr, skills align with JD requirements ({skill_str})."
     elif template_idx == 5:
-        sentence1 = f"Based in {location}, {title} at {company} — {yoe:.0f} years applied ML with production deployment evidence."
+        sentence1 = f"Based in {location}, {title} at {company} - {yoe:.0f} years applied ML with production deployment evidence."
     elif template_idx == 6:
         sentence1 = f"{yoe:.0f}yr {title} ({company}); JD skills: {skill_str}{'.' if not assess_str else f'; assessed: {assess_str}.'}"
     else:
         gh_str = f"GitHub {github:.0f}/100" if github >= 0 else "no GitHub"
-        sentence1 = f"{title} at {company}, {yoe:.0f}yr — {gh_str}, {rr:.0%} response rate, {notice}d notice."
+        sentence1 = f"{title} at {company}, {yoe:.0f}yr - {gh_str}, {rr:.0%} response rate, {notice}d notice."
 
     if rank <= 20:
         if strengths:
@@ -883,6 +884,15 @@ def build_reasoning(candidate: dict, scores: dict, rank: int) -> str:
             sentence2 = f"Ranked lower due to: {'; '.join(concerns[:2])}."
         else:
             sentence2 = f"Included on skill overlap; behavioral engagement is adequate."
+
+    # Add score breakdown for top 20 candidates
+    if rank <= 20:
+        breakdown = (
+            f"[Skills:{pct(scores.get('skills',0))}% "
+            f"Career:{pct(scores.get('career',0))}% "
+            f"Availability:{pct(scores.get('behavioral',0))}%]"
+        )
+        return f"{sentence1} {sentence2} {breakdown}"
 
     return f"{sentence1} {sentence2}"
 
@@ -1022,7 +1032,7 @@ def candidate_profile_text(c: dict) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="NeuroRecruit — Candidate Ranker")
+    parser = argparse.ArgumentParser(description="NeuroRecruit - Candidate Ranker")
     parser.add_argument("--candidates", required=True, help="Path to candidates.jsonl")
     parser.add_argument("--out", required=True, help="Output CSV path")
     parser.add_argument("--top", type=int, default=100, help="Number of candidates to rank")
