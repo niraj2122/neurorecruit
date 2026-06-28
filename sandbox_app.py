@@ -361,7 +361,7 @@ with col_left:
         type=["jsonl", "json"],
         label_visibility="collapsed"
     )
-    top_n = st.slider("Candidates to show in results", 5, 50, 20)
+    top_n = st.slider("Candidates to show in results", 5, 100, 20)
     run_btn = st.button("Rank candidates", type="primary", use_container_width=True)
 
 with col_right:
