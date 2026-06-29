@@ -189,20 +189,6 @@ neurorecruit/
 
 ---
 
-## Top 5 results
-
-| Rank | Candidate | Role | Company | Score |
-|------|-----------|------|---------|-------|
-| #1 | CAND_0018499 | Senior ML Engineer | Zomato | 0.7816 |
-| #2 | CAND_0081846 | Lead AI Engineer | Razorpay | 0.7602 |
-| #3 | CAND_0077337 | Staff ML Engineer | Paytm | 0.7592 |
-| #4 | CAND_0079387 | AI Engineer | Microsoft | 0.7329 |
-| #5 | CAND_0071974 | Senior AI Engineer | Netflix | 0.7202 |
-
-Score range across top 100: **0.6176 – 0.7816**
-
----
-
 ## Reproduce command
 
 ```bash
