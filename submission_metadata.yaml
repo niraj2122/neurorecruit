@@ -9,7 +9,7 @@ team_name: "NeuroRecruit"
 primary_contact:
   name: "Niraj Baviskar"
   email: "nirajbaviskar2122@gmail.com"
-  phone: "+91-9097722122"        # ← replace with your real phone number
+  phone: "+91-9097722122"        
 
 team_members:
   - name: "Gajanan Baviskar "
